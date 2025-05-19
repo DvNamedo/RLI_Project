@@ -8,9 +8,9 @@ public class log : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        PerlinNoise pn = new PerlinNoise(10, 10, 2006, 603);
+        PerlinNoise pn = new PerlinNoise(40, 40, 20306, 6203);
 
-        Debug.Log(pn.getPerlinMatrix().ToString());
+        Debug.Log(pn.GetPerlinMatrix().ToString(3));
         Debug.Log("a");
     }
 
