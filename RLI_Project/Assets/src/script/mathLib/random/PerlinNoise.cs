@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
+using System.Xml.Schema;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -276,6 +277,27 @@ public class Matrix
         return translatedVector;
     }
 
+    public Matrix FunctionInMatrix(Func<float, float> func)
+    {
+        int row_length = Size()[0];
+        int col_length = Size()[1];
+
+        Matrix result = new(row_length, col_length);
+
+        for (int i = 0; i < row_length; i++)
+        {
+            for (int j = 0; j < col_length; j++)
+            {
+
+                result.Sequence[i][j] = func(Sequence[i][j]);
+
+            }
+        }
+
+        return result;
+
+    }
+
     public string ToString(int formatting = 8)
     {
         string str = "";
@@ -455,9 +477,13 @@ public class PerlinNoise
         }
 
         Func<Matrix, Matrix> fade = t => {
-            int x = t.Size()[0];
-            int y = t.Size()[1];
-            return t.PowHadamard(3) & ((t & (t & (new Matrix(x, y, 6f)) - (new Matrix(x, y, 15f))) + (new Matrix(x, y, 10f))));
+            return t.FunctionInMatrix((t) =>
+            {
+                float t2 = t * t;
+                float t3 = t2 * t;
+
+                return (6f * t2 - 15f * t + 10f) * t3; // (6t^2 - 15t + 10)*t^3
+            });
         };
 
         lerpX1 = Lerp(DotMats[(int)Corner.RU], DotMats[(int)Corner.LU], randomPointMat[0], fade);
