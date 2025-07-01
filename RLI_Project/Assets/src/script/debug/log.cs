@@ -11,7 +11,6 @@ public class log : MonoBehaviour
         PerlinNoise pn = new PerlinNoise(40, 40, 20306, 6203);
 
         Debug.Log(pn.GetPerlinMatrix().ToString(3));
-        Debug.Log("a");
     }
 
     // Update is called once per frame
