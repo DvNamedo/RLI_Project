@@ -4,7 +4,7 @@ using UnityEngine;
 
 public class PathMapNode : MapNode, INodeConnectivity
 {
-    public int MaxChildCount { get; private set; } = 1;
+    public const int MaxChildCount = 1;
     public MapNode Child { get; set; }
 
     public PathMapNode(Vector2Int position, MapNode parent) : base(position, parent)

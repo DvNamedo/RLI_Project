@@ -9,8 +9,8 @@ public class ChunkRenderer : MonoBehaviour
 {
     public Vector3Int Pivot;
     public Vector2Int ChunkSize;
-    public ContentsInfo InteractionTileInfo;
-    public ContentsInfo BackgroundTileInfo;
+    //public ContentsInfo InteractionTileInfo;
+    //public ContentsInfo BackgroundTileInfo;
 
     public List<GameObject> InteractionTilePrefap;
     public List<GameObject> BackgroundTilePrefap;

@@ -1,24 +1,20 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Data;
 using UnityEngine;
 
-public class MapNode
+public class MapNode : MapNodeBase
 {
-    public int ID;
-    public Vector2Int Position { get; set; }
-    public int Depth { get; private set; }
+    public MapNodeBase Parent {  get; set; }
 
-    public MapNode Parent {  get; set; }
-
-    public MapNode(Vector2Int position, MapNode parent)
+    public MapNode(Vector2Int position, MapNode parent) : base(position)
     {
-        Position = position;
+
+        if (object.ReferenceEquals(parent, null))
+            throw new NullReferenceException();
         Parent = parent;
-
-        Depth = parent != null ? Parent.Depth + 1 : 0;
-        ID = Vars.NewMapNodeID;
-
+        Depth = Parent.Depth + 1;
     }
 
     public virtual bool IsPositionValid()

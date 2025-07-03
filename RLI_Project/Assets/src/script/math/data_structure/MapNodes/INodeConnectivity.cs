@@ -4,7 +4,7 @@ using UnityEngine;
 
 public interface INodeConnectivity
 {
-    public int MaxChildCount { get; }
+    public const int MaxChildCount = 0;
     public virtual List<MapNode> Child
     {
         get
