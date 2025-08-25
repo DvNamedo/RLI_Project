@@ -7,8 +7,14 @@ public class StageScematicsGenerator
     /// <summary>
     /// 
     /// </summary>
-    public StageScematicsGenerator(float growth_rate, uint seed, int[] pathes_depth, int pathes_amount, StageInfo previous_stage_info, params PathRoom[] pathes)
-    {
+    public StageScematicsGenerator(
+        float growth_rate, 
+        uint seed, 
+        int[] pathes_depth, 
+        int pathes_amount, 
+        StageInfo previous_stage_info, 
+        params PathRoom[] pathes
+    ){
 
     }
 

@@ -8,7 +8,9 @@ public class setTile : MonoBehaviour
 {
     public Tilemap tilemap;
     public TileBase tileToPlace;
-    Vector3Int tilePos = new(0, 0, 0);
+
+    public GameObject go;
+    public Vector3Int tilePos = new(0, 0, 0);
     TilemapCollider2D Colider;
 
     // Start is called before the first frame update
@@ -30,8 +32,6 @@ public class setTile : MonoBehaviour
 
         tilemap.SetColor(tilePos, Color.red);
         tilemap.RefreshTile(tilePos);
-
-
     }
 
     // Update is called once per frame
@@ -40,13 +40,14 @@ public class setTile : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.P))
         {
             tilemap.SetTile(tilePos, tileToPlace);
-            tilemap.SetColor(tilePos, Color.red);
-            tilemap.RefreshTile(tilePos);
+            //tilemap.SetColor(tilePos, Color.red);
+            //tilemap.RefreshTile(tilePos);
             //Colider.ProcessTilemapChanges();
         }   
 
         if (Input.GetKeyUp(KeyCode.P)) 
         {
+            
             tilemap.SetTile(tilePos, null);
         }
     }

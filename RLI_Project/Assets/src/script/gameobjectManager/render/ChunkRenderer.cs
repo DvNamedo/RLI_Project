@@ -20,6 +20,7 @@ public class ChunkRenderer : MonoBehaviour
     public TileBase tileToPlace;
     TilemapCollider2D Colider;
 
+
     List<Tilemap> tilemaps = new List<Tilemap>();
 
     private void Awake()

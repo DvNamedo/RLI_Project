@@ -5,6 +5,46 @@ using System.Runtime.InteropServices;
 using Unity.VisualScripting;
 using UnityEngine;
 
+public struct Shape
+{
+    public RootMapNode root;
+    public List<MapNodeBase> shape;
+
+    public readonly int Count() => shape.Count;
+
+    public Shape(RootMapNode _root)
+    {
+        root = _root;
+        shape = new List<MapNodeBase>();
+    }
+
+    public void Init(RootMapNode _root)
+    {
+        root = _root;
+        shape = new List<MapNodeBase>();
+    }
+
+    public readonly void Add(MapNodeBase sample)
+    {
+        if( sample is RootMapNode ) 
+            throw new ArgumentException($"{typeof(MapNodeBase)}{sample} CANNOT be a backward elememt");
+        if (this.Count() == 0)
+            throw new ArgumentException("First element must add with Init() or Constructor");
+
+        shape.Add(sample);
+    }
+
+    public MapNodeBase this[int idx]
+    {
+        get => shape[idx];
+        set 
+        {
+            if (this.Count() == 0)
+                throw new ArgumentException("First element must add with Init() or Constructor");
+            shape[idx] = value;
+        }
+    }
+};
 
 public class MapTree
 {
@@ -12,24 +52,52 @@ public class MapTree
 
     RootMapNode Root;
 
+    HashSet<Vector2Int> occupied = new HashSet<Vector2Int>();
+
+    
+
     public MapTree(Vector2Int pivot) 
     {
-        Root = new RootMapNode(pivot);
-        TreeDict[Root.ID] = Root;
-
+        Init(new RootMapNode(pivot));
     }
 
-    public List<MapNodeBase> BendingShape(List<MapNodeBase> original, int axis_node_idx, int action_dir)
+    public void Init(RootMapNode new_root)
     {
-        if (axis_node_idx == original.Count - 1)
-            return original;
+        TreeDict.Clear();
+        Root = new_root;
+        this[Root.ID] = Root;
+    }
 
-        for (int i = axis_node_idx + 1; i < original.Count; i++) 
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="original"></param>
+    /// <param name="axis_node_idx">PathMapNode CANNOT Rotate</param>
+    /// <param name="action_dir">can -1(right rotate), 0(none) , 1(left rotate)</param>
+    /// <returns>return whether success</returns>
+    public bool BendingShape(ref Shape original, int axis_node_idx, int action_dir)
+    {
+        var axis_node = original[axis_node_idx];
+        if(axis_node is MapNode)
+        {
+            var axis_parent = ((MapNode)axis_node).Parent;
+            var parent_dir_vec = -axis_parent.Position.DirectionTo(original[axis_node_idx].Position);
+            var parent_dir = Mathf.RoundToInt(2f * Mathf.Deg2Rad * Vector2.SignedAngle(Vector2.right, (Vector2)parent_dir_vec) / Mathf.PI);
+
+            // 상대 방향으로 보정
+            action_dir += parent_dir - 2;
+        }
+
+
+        if (axis_node_idx > original.Count() - 1)
+            return false;
+
+        for (int i = axis_node_idx + 1; i < original.Count(); i++) 
         {
 
             if (original[axis_node_idx] is PathMapNode) // path
             {
-                return original;
+                return false;
             }
             else // nither path
             {
@@ -37,19 +105,18 @@ public class MapTree
             }
         }
 
-        return original;
+        return true;
     }
 
-    public List<MapNodeBase> GetStraightShape(RootMapNode root, int[] path_interval)
+    public Shape GetStraightShape(int[] path_interval)
     {
-        var shape = new List<MapNodeBase>();
+        MapNodeBase recent_node = Root;
         
-        MapNodeBase recent_node = root;
-        shape.Add(recent_node);
+        var shape = new Shape(Root);
 
         for (int i = 0; i < path_interval.Length; i++)
         {
-            
+
             // in between node
             for (int j = 0; j < path_interval[i] - 1; j++)
             {
@@ -60,6 +127,7 @@ public class MapTree
                 shape.Add(node);
                 recent_node = node;
             }
+
             // path node or Exit
             if (i < path_interval.Length - 1)
             {
@@ -83,11 +151,13 @@ public class MapTree
         return shape;
     }
 
-    public void AssignShapeToTree(List<MapNodeBase> nodes)
+    public void AssignShapeToTree(Shape nodes)
     {
-        foreach (var node in nodes)
+
+        foreach (var node in nodes.shape)
         {
-            TreeDict[node.ID] = node;
+            TreeDict.Clear();
+            this[node.ID] = node;
         }
     }
 
@@ -133,14 +203,14 @@ public class MapTree
     public bool AddAtPath<TLeaf>(PathMapNode parent) where TLeaf : MapNode, new()
     {
         var dir = parent.Position - parent.Parent.Position;
-        if (IsNewPosition(parent.Position + dir))
+        if (IsFreePosition(parent.Position + dir))
         {
             var child_pos = parent.Position + dir;
             parent.Child = Activator.CreateInstance(typeof(TLeaf)
                                                     , child_pos
                                                     , parent
                                                     ) as TLeaf;
-            TreeDict[parent.Child.ID] = parent.Child;
+            this[parent.Child.ID] = parent.Child;
             return true;
         }
         return false;
@@ -148,20 +218,22 @@ public class MapTree
 
     public bool AddAtFulCont<TLeaf>(FullConnectedMapNode parent, int child_dir) where TLeaf: MapNode, new()
     {
-        var parent_dir_vec = (-(parent.Position - parent.Parent.Position));
+        var parent_dir_vec = - parent.Parent.Position.DirectionTo(parent.Position);
 
-        var parent_dir = Mathf.Round((-2f / Mathf.PI) * Mathf.Atan2(parent_dir_vec.y, parent_dir_vec.x));
+        //var parent_dir = Mathf.Round((-2f / Mathf.PI) * Mathf.Atan2(parent_dir_vec.y, parent_dir_vec.x));
+        var parent_dir = Mathf.RoundToInt(2f * Mathf.Deg2Rad * Vector2.SignedAngle(Vector2.right, (Vector2)parent_dir_vec) / Mathf.PI);
+        
 
         var child_idx = child_dir < parent_dir ? child_dir : child_dir - 1;
 
         var child_pos = parent.Position + Vector2Int.zero.RotateAround(Vector2Int.right, Mathf.PI * child_dir / 2f);
-        if (IsNewPosition(child_pos))
+        if (IsFreePosition(child_pos))
         {
             parent.Child[child_idx] = Activator.CreateInstance(typeof(TLeaf)
                                                               , child_pos
                                                               , parent
                                                               ) as TLeaf;
-            TreeDict[parent.Child[child_idx].ID] = parent.Child[child_idx];
+            this[parent.Child[child_idx].ID] = parent.Child[child_idx];
             return true;
         }
         return false;
@@ -170,13 +242,13 @@ public class MapTree
     public bool AddAtRoot<TLeaf>(RootMapNode parent, int child_dir) where TLeaf: MapNode, new()
     {
         var child_pos = parent.Position + Vector2Int.zero.RotateAround(Vector2Int.right, Mathf.PI * child_dir / 2f);
-        if (IsNewPosition(child_pos)) 
+        if (IsFreePosition(child_pos)) 
         {
             parent.Child[child_dir] = Activator.CreateInstance(typeof(TLeaf)
                                                               , child_pos
                                                               , parent
                                                               ) as TLeaf;
-            TreeDict[parent.Child[child_dir].ID] = parent.Child[child_dir];
+            this[parent.Child[child_dir].ID] = parent.Child[child_dir];
             return true;
         }
         return false;
@@ -187,19 +259,11 @@ public class MapTree
         if (dirs == null || dirs.Length == 0)
             throw new ArgumentException("dirs must not be empty.", nameof(dirs));
 
-        // 1) 로컬 복사본 생성
-        var list = new List<Vector2Int>(dirs);
-
-        // 2) Fisher–Yates 셔플 (int Range: 상한 배제라 i+1)
-        for (int i = list.Count - 1; i > 0; i--)
-        {
-            int j = UnityEngine.Random.Range(0, i + 1);
-            (list[i], list[j]) = (list[j], list[i]);
-        }
+        dirs.ShuffleInPlace<Vector2Int>();
 
         // 3) 유효한 위치를 찾는 즉시 반환
-        foreach (var next in list)
-            if (IsNewPosition(next))
+        foreach (var next in dirs)
+            if (IsFreePosition(next))
                 return next;
 
         return Root.Position;
@@ -209,45 +273,34 @@ public class MapTree
     {
         var checkedPositionSet = new HashSet<Vector2Int>();
         
-        foreach (MapNodeBase node in shape)
+        foreach (MapNode node in shape)
         {
-            checkedPositionSet.Add(node.Position);
+            if(!checkedPositionSet.Add(node.Position))
+                return true;
         }
-
-        return shape.Count != checkedPositionSet.Count;
+        return false;
     }
-
-    public bool IsOverlappedPosition()
-    {
-        var checkedPositionSet = new HashSet<Vector2Int>();
-        var nodeList = TreeDict.Values;
-        foreach (MapNodeBase node in nodeList)
-        {
-            checkedPositionSet.Add(node.Position);
-        }
-
-        return nodeList.Count != checkedPositionSet.Count;
-
-    }
-
-    public bool IsNewPosition(Vector2Int next)
-    {
-        var checkedPositionSet = new HashSet<Vector2Int>();
-        var nodeList = TreeDict.Values;
-        foreach (MapNodeBase node in nodeList)
-        {
-            checkedPositionSet.Add(node.Position);
-        }
-        checkedPositionSet.Add(next);
-
-        return (nodeList.Count + 1) == checkedPositionSet.Count;
-
-    }
+    public bool IsFreePosition(Vector2Int next) => !occupied.Contains(next);
 
     public MapNodeBase this[int id]
     {
-        get => TreeDict[id];
-        set => TreeDict[id] = value;
+        get => this.TreeDict[id];
+        set
+        {
+            // ID 단독 교체 금지
+            if (TreeDict.ContainsKey(id))
+            {
+                Debug.LogError($"Duplicate ID: {id}");
+                return;
+            }
+            // 좌표 점유 시도. 실패하면 등록 금지
+            if (!occupied.Add(value.Position))
+            {
+                Debug.LogError($"Position conflict at {value.Position}");
+                return;
+            }
+            TreeDict.Add(id, value);
+        }
     }
 
 

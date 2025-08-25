@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using Unity.VisualScripting;
 using UnityEngine;
 
 public static class VectorExtension
@@ -11,7 +12,14 @@ public static class VectorExtension
         var (rx, ry) = (dx * cos - dy * sin, dx * sin + dy * cos);
         return new Vector2(rx + v.x, ry + v.y);
     }
-    
+
+    public static Vector2 DirectionTo(this Vector2 from, Vector2 to)
+        => (to - from).normalized;
+
+    public static Vector2Int DirectionTo(this Vector2Int from, Vector2Int to)
+    {
+        return Vector2Int.RoundToInt(from.DirectionTo(to));
+    }
 
     public static Vector2Int RotateAround(this Vector2Int v, Vector2Int u, float angle)
     {
@@ -46,4 +54,5 @@ public static class VectorExtension
         Vector3 temp = ((Vector3)v).RotateAround((Vector3)u, angleRad, axis);
         return Vector3Int.RoundToInt(temp);
     }
+
 }
