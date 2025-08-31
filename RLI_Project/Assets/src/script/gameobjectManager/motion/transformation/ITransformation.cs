@@ -4,5 +4,7 @@ using UnityEngine;
 
 public interface ITransformation
 {
-    
+    int Order { get; set; }
+
+    void Accumulate(ref MotionContext context);
 }
